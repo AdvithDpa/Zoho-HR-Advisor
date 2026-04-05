@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ZohoGuide AI – HR Policy Configuration Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161a23;
+    --surface2: #1e2330;
+    --border: #2a2f3d;
+    --accent: #4f8ef7;
+    --accent2: #7c5cfc;
+    --accent3: #00d4aa;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --success: #22c55e;
+    --text: #e8eaf0;
+    --text2: #8b92a8;
+    --text3: #5a6178;
+    --radius: 12px;
+    --radius-lg: 18px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Background grid ── */
+  body::before {
+    content:'';
+    position:fixed; inset:0; z-index:0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.3;
+    pointer-events:none;
+  }
+
+  /* ── Header ── */
+  header {
+    position: sticky; top:0; z-index:100;
+    background: rgba(13,15,20,0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 64px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text { font-family: 'Space Mono', monospace; font-size: 15px; font-weight: 700; }
+  .logo-text span { color: var(--accent); }
+  .logo-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+  .header-badge {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Main layout ── */
+  .main { position: relative; z-index:1; max-width: 980px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  /* ── Hero ── */
+  .hero { text-align: center; margin-bottom: 48px; }
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(79,142,247,0.1); border: 1px solid rgba(79,142,247,0.3);
+    padding: 6px 16px; border-radius: 20px; font-size: 12px; color: var(--accent);
+    font-weight: 600; letter-spacing: 0.5px; margin-bottom: 20px;
+  }
+  .hero h1 { font-size: clamp(26px, 4vw, 38px); font-weight: 700; line-height: 1.2; margin-bottom: 14px; }
+  .hero h1 em { font-style: normal; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero p { color: var(--text2); font-size: 15px; max-width: 560px; margin: 0 auto; line-height: 1.7; }
+
+  /* ── Upload area ── */
+  .upload-card {
+    background: var(--surface);
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-lg);
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .upload-card:hover, .upload-card.drag { border-color: var(--accent); background: rgba(79,142,247,0.05); }
+  .upload-card.drag::after {
+    content:'Drop it here!';
+    position:absolute; inset:0; background: rgba(79,142,247,0.15);
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; font-weight:700; color:var(--accent);
+  }
+  .upload-icon { font-size: 42px; margin-bottom: 14px; }
+  .upload-card h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+  .upload-card p { color: var(--text2); font-size: 13px; }
+  .upload-formats { display: flex; gap: 8px; justify-content: center; margin-top: 16px; }
+  .fmt-badge { background: var(--surface2); border: 1px solid var(--border); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-family: 'Space Mono', monospace; color: var(--text2); }
+  #fileInput { display:none; }
+
+  /* File preview */
+  .file-preview {
+    display:none; align-items:center; gap:14px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px 20px; margin-bottom: 24px;
+  }
+  .file-preview.show { display:flex; }
+  .file-icon { font-size:28px; }
+  .file-info { flex:1; }
+  .file-name { font-weight:600; font-size:14px; }
+  .file-size { font-size:12px; color:var(--text2); margin-top:2px; }
+  .remove-btn { cursor:pointer; color:var(--text3); font-size:18px; transition:color 0.2s; }
+  .remove-btn:hover { color:var(--danger); }
+
+  /* Text input area */
+  .or-divider { display:flex; align-items:center; gap:14px; margin-bottom:24px; color:var(--text3); font-size:13px; }
+  .or-divider::before, .or-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  .paste-area {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+  .paste-area label { font-size: 12px; color: var(--text2); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; display:block; margin-bottom: 8px; }
+  .paste-area textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px; color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.6;
+    resize: vertical; min-height: 120px; outline:none; transition: border-color 0.2s;
+  }
+  .paste-area textarea:focus { border-color: var(--accent); }
+  .paste-area textarea::placeholder { color: var(--text3); }
+
+  /* Module selector */
+  .module-selector { margin-bottom: 28px; }
+  .module-selector label { font-size: 12px; color: var(--text2); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; display:block; margin-bottom: 12px; }
+  .modules-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .module-chip {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 8px 16px; border-radius: 8px; cursor:pointer;
+    font-size: 13px; font-weight: 500; transition: all 0.2s; user-select:none;
+  }
+  .module-chip:hover { border-color: var(--accent2); }
+  .module-chip.active { background: rgba(124,92,252,0.15); border-color: var(--accent2); color: #a78bfa; }
+  .module-chip input { display:none; }
+
+  /* Analyse button */
+  .analyse-btn {
+    width:100%; padding: 16px; border-radius: var(--radius);
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; color: white; font-family: 'DM Sans', sans-serif;
+    font-size: 16px; font-weight: 700; cursor:pointer; letter-spacing: 0.3px;
+    transition: all 0.25s; position:relative; overflow:hidden;
+  }
+  .analyse-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(79,142,247,0.35); }
+  .analyse-btn:active { transform: translateY(0); }
+  .analyse-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+  .analyse-btn .btn-inner { display:flex; align-items:center; justify-content:center; gap:10px; }
+
+  /* Loading */
+  .spinner {
+    width:18px; height:18px; border:2px solid rgba(255,255,255,0.3);
+    border-top-color:white; border-radius:50%; animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* ── Results ── */
+  #results { display:none; margin-top: 48px; }
+  #results.show { display:block; }
+
+  .results-header {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 28px; flex-wrap:wrap; gap:14px;
+  }
+  .results-header h2 { font-size: 22px; font-weight: 700; }
+  .results-header h2 span { color: var(--accent); }
+  .results-meta { font-size: 12px; color: var(--text3); font-family: 'Space Mono', monospace; }
+
+  /* Summary pills */
+  .summary-pills { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:32px; }
+  .pill {
+    display:flex; align-items:center; gap:8px; padding: 10px 16px;
+    border-radius: 10px; font-size: 13px; font-weight: 600; border: 1px solid;
+  }
+  .pill.green  { background:rgba(34,197,94,0.1);  border-color:rgba(34,197,94,0.3);  color:#4ade80; }
+  .pill.yellow { background:rgba(245,158,11,0.1); border-color:rgba(245,158,11,0.3); color:#fbbf24; }
+  .pill.purple { background:rgba(124,92,252,0.1); border-color:rgba(124,92,252,0.3); color:#a78bfa; }
+  .pill.blue   { background:rgba(79,142,247,0.1); border-color:rgba(79,142,247,0.3); color:#60a5fa; }
+
+  /* Tab navigation */
+  .tabs { display:flex; gap:4px; background:var(--surface); border-radius:10px; padding:4px; margin-bottom:28px; overflow-x:auto; }
+  .tab-btn {
+    flex:1; min-width:fit-content; padding:10px 16px; border-radius:8px; border:none;
+    background:transparent; color:var(--text2); font-family:'DM Sans',sans-serif;
+    font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; white-space:nowrap;
+  }
+  .tab-btn:hover { color:var(--text); }
+  .tab-btn.active { background:var(--surface2); color:var(--text); box-shadow:0 2px 8px rgba(0,0,0,0.3); }
+
+  /* Tab panels */
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+
+  /* ── Section card ── */
+  .section-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-lg); margin-bottom:20px; overflow:hidden;
+  }
+  .section-header {
+    display:flex; align-items:center; gap:14px; padding:18px 22px;
+    cursor:pointer; user-select:none; transition:background 0.2s;
+  }
+  .section-header:hover { background:var(--surface2); }
+  .section-icon { font-size:22px; width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:var(--surface2); flex-shrink:0; }
+  .section-title { flex:1; }
+  .section-title h3 { font-size:15px; font-weight:700; margin-bottom:3px; }
+  .section-title p { font-size:12px; color:var(--text2); }
+  .section-chevron { color:var(--text3); font-size:18px; transition:transform 0.2s; }
+  .section-card.open .section-chevron { transform:rotate(180deg); }
+  .section-body { display:none; padding:0 22px 22px; }
+  .section-card.open .section-body { display:block; }
+
+  /* Status badge */
+  .status-badge {
+    font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px;
+    font-family:'Space Mono',monospace; letter-spacing:0.3px;
+  }
+  .badge-direct  { background:rgba(34,197,94,0.15);  color:#4ade80; }
+  .badge-workflow{ background:rgba(245,158,11,0.15); color:#fbbf24; }
+  .badge-workaround { background:rgba(124,92,252,0.15); color:#a78bfa; }
+  .badge-manual  { background:rgba(239,68,68,0.15);  color:#f87171; }
+  .badge-na      { background:rgba(100,116,139,0.15); color:#94a3b8; }
+
+  /* Nav path */
+  .nav-path {
+    display:flex; align-items:center; flex-wrap:wrap; gap:4px;
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:8px; padding:10px 14px; margin:12px 0; font-size:13px;
+  }
+  .nav-step {
+    background:rgba(79,142,247,0.12); border:1px solid rgba(79,142,247,0.25);
+    padding:3px 10px; border-radius:5px; color:var(--accent); font-weight:600;
+    font-size:12px; white-space:nowrap;
+  }
+  .nav-arrow { color:var(--text3); font-size:14px; }
+
+  /* Steps list */
+  .steps-list { list-style:none; padding:0; margin:12px 0; }
+  .steps-list li {
+    display:flex; gap:14px; padding:10px 0;
+    border-bottom:1px solid var(--border); font-size:13px; line-height:1.6;
+  }
+  .steps-list li:last-child { border-bottom:none; }
+  .step-num {
+    width:24px; height:24px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:700; flex-shrink:0; margin-top:1px;
+  }
+
+  /* Info blocks */
+  .info-block {
+    border-radius:8px; padding:12px 16px; margin:10px 0; font-size:13px; line-height:1.6;
+    display:flex; gap:12px; align-items:flex-start;
+  }
+  .info-block.tip    { background:rgba(0,212,170,0.08); border:1px solid rgba(0,212,170,0.2); }
+  .info-block.warn   { background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); }
+  .info-block.danger { background:rgba(239,68,68,0.08);  border:1px solid rgba(239,68,68,0.2); }
+  .info-block.info   { background:rgba(79,142,247,0.08); border:1px solid rgba(79,142,247,0.2); }
+  .info-block-icon { font-size:16px; margin-top:1px; flex-shrink:0; }
+  .info-block.tip .info-block-icon    { color:var(--accent3); }
+  .info-block.warn .info-block-icon   { color:var(--warn); }
+  .info-block.danger .info-block-icon { color:var(--danger); }
+  .info-block.info .info-block-icon   { color:var(--accent); }
+
+  /* Workflow diagram */
+  .workflow-diagram {
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:10px; padding:20px; margin:14px 0;
+    font-size:13px;
+  }
+  .wf-title { font-size:12px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:14px; }
+  .wf-flow { display:flex; flex-direction:column; gap:0; }
+  .wf-node {
+    display:flex; align-items:center; gap:12px; padding:10px 14px;
+    border-radius:8px; background:var(--surface); border:1px solid var(--border); position:relative;
+  }
+  .wf-node.trigger { border-color:var(--accent); }
+  .wf-node.condition { border-color:var(--warn); border-style:dashed; }
+  .wf-node.action { border-color:var(--accent3); }
+  .wf-node.notify { border-color:var(--accent2); }
+  .wf-connector { width:2px; height:20px; background:var(--border); margin:0 20px; }
+  .wf-node-icon { font-size:16px; width:32px; height:32px; border-radius:8px; background:var(--surface2); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .wf-node-content { flex:1; }
+  .wf-node-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text3); margin-bottom:2px; }
+  .wf-node-text { font-size:13px; font-weight:500; }
+  .wf-node-sub { font-size:11px; color:var(--text2); margin-top:2px; }
+  .wf-tag {
+    font-size:10px; padding:2px 8px; border-radius:4px; font-weight:700;
+    font-family:'Space Mono',monospace;
+  }
+  .wf-tag.t { background:rgba(79,142,247,0.2); color:var(--accent); }
+  .wf-tag.c { background:rgba(245,158,11,0.2); color:var(--warn); }
+  .wf-tag.a { background:rgba(0,212,170,0.2); color:var(--accent3); }
+  .wf-tag.n { background:rgba(124,92,252,0.2); color:var(--accent2); }
+
+  /* Image placeholder */
+  .img-placeholder {
+    background: var(--surface2);
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 28px;
+    text-align: center;
+    margin: 12px 0;
+  }
+  .img-placeholder .img-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text3); margin-bottom:8px; }
+  .img-placeholder .img-nav { font-size:13px; color:var(--accent); font-weight:600; }
+  .img-placeholder .img-desc { font-size:12px; color:var(--text2); margin-top:6px; line-height:1.6; }
+  .img-icon { font-size:32px; margin-bottom:10px; opacity:0.4; }
+
+  /* Summary table */
+  .summary-table { width:100%; border-collapse:collapse; font-size:13px; margin-top:14px; }
+  .summary-table th {
+    text-align:left; padding:10px 14px; background:var(--surface2);
+    color:var(--text2); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;
+    border-bottom:1px solid var(--border);
+  }
+  .summary-table td { padding:10px 14px; border-bottom:1px solid var(--border); vertical-align:top; line-height:1.5; }
+  .summary-table tr:last-child td { border-bottom:none; }
+  .summary-table tr:hover td { background:rgba(255,255,255,0.02); }
+
+  /* Checklist */
+  .checklist { list-style:none; padding:0; margin:12px 0; }
+  .checklist li {
+    display:flex; gap:12px; align-items:flex-start;
+    padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; line-height:1.6;
+  }
+  .checklist li:last-child { border-bottom:none; }
+  .check-box {
+    width:20px; height:20px; border-radius:5px; border:2px solid var(--border);
+    flex-shrink:0; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:all 0.15s; margin-top:2px;
+  }
+  .check-box.checked { background:var(--success); border-color:var(--success); }
+  .checklist li.done .check-text { text-decoration:line-through; color:var(--text3); }
+
+  /* New analysis btn */
+  .new-btn {
+    display:flex; align-items:center; gap:8px; padding:10px 20px;
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:8px; cursor:pointer; font-family:'DM Sans',sans-serif;
+    font-size:13px; font-weight:600; color:var(--text2); transition:all 0.2s;
+  }
+  .new-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width:6px; height:6px; }
+  ::-webkit-scrollbar-track { background:var(--bg); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+  /* Error */
+  .error-box { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:10px; padding:16px 20px; color:#f87171; font-size:14px; margin-top:16px; }
+
+  @media(max-width:600px){
+    .main { padding:24px 16px 60px; }
+    header { padding:0 16px; }
+    .tabs { gap:2px; }
+    .tab-btn { padding:8px 10px; font-size:12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚙️</div>
+    <div>
+      <div class="logo-text">Zoho<span>Guide</span> AI</div>
+      <div class="logo-sub">HR Policy Configuration Assistant</div>
+    </div>
+  </div>
+  <div class="header-badge">Beta v1.0</div>
+</header>
+
+<div class="main">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-tag">🤖 Powered by Claude AI</div>
+    <h1>Configure <em>any client policy</em><br/>in Zoho People — fast.</h1>
+    <p>Upload a leave policy or any HR policy document. Get step-by-step Zoho People configuration guides, navigation paths, workflow designs, and smart workaround suggestions — all in one place.</p>
+  </div>
+
+  <!-- Upload -->
+  <div class="upload-card" id="uploadCard" onclick="document.getElementById('fileInput').click()">
+    <div class="upload-icon">📄</div>
+    <h3>Upload Client's HR Policy Document</h3>
+    <p>Drag & drop or click to select a file</p>
+    <div class="upload-formats">
+      <span class="fmt-badge">.docx</span>
+      <span class="fmt-badge">.pdf</span>
+      <span class="fmt-badge">.txt</span>
+    </div>
+    <input type="file" id="fileInput" accept=".docx,.pdf,.txt,.doc"/>
+  </div>
+
+  <div class="file-preview" id="filePreview">
+    <div class="file-icon" id="fileEmoji">📄</div>
+    <div class="file-info">
+      <div class="file-name" id="fileName">–</div>
+      <div class="file-size" id="fileSize">–</div>
+    </div>
+    <div class="remove-btn" onclick="removeFile()">✕</div>
+  </div>
+
+  <div class="or-divider">OR paste policy text directly</div>
+
+  <div class="paste-area">
+    <label>Paste Policy Text</label>
+    <textarea id="policyText" placeholder="Paste the client's leave policy or HR policy text here...&#10;&#10;e.g. Casual Leave: 12 days per year, accrued monthly..."></textarea>
+  </div>
+
+  <!-- Module selector -->
+  <div class="module-selector">
+    <label>Select Zoho People Modules to Configure</label>
+    <div class="modules-grid" id="modulesGrid">
+      <label class="module-chip active"><input type="checkbox" value="leave" checked onchange="toggleChip(this)"/>🏖️ Leave Management</label>
+      <label class="module-chip"><input type="checkbox" value="attendance" onchange="toggleChip(this)"/>⏱️ Attendance</label>
+      <label class="module-chip"><input type="checkbox" value="payroll" onchange="toggleChip(this)"/>💰 Payroll</label>
+      <label class="module-chip"><input type="checkbox" value="performance" onchange="toggleChip(this)"/>📊 Performance</label>
+      <label class="module-chip"><input type="checkbox" value="onboarding" onchange="toggleChip(this)"/>🚀 Onboarding</label>
+      <label class="module-chip"><input type="checkbox" value="separation" onchange="toggleChip(this)"/>🚪 Separation</label>
+      <label class="module-chip"><input type="checkbox" value="travel" onchange="toggleChip(this)"/>✈️ Travel & Expense</label>
+      <label class="module-chip"><input type="checkbox" value="custom" onchange="toggleChip(this)"/>🔧 Custom Forms</label>
+    </div>
+  </div>
+
+  <button class="analyse-btn" id="analyseBtn" onclick="analysePolicy()">
+    <div class="btn-inner">
+      <span>🔍</span>
+      <span>Analyse Policy & Generate Configuration Guide</span>
+    </div>
+  </button>
+
+  <div id="errorBox" class="error-box" style="display:none;"></div>
+
+  <!-- ── RESULTS ── -->
+  <div id="results">
+
+    <div class="results-header">
+      <div>
+        <h2>Configuration Guide for <span id="clientLabel">Client</span></h2>
+        <div class="results-meta" id="resultsMeta">–</div>
+      </div>
+      <button class="new-btn" onclick="resetTool()">↩ New Analysis</button>
+    </div>
+
+    <!-- Summary pills -->
+    <div class="summary-pills" id="summaryPills"></div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('overview',this)">📋 Overview</button>
+      <button class="tab-btn" onclick="showTab('config',this)">⚙️ Configuration Steps</button>
+      <button class="tab-btn" onclick="showTab('workflows',this)">🔄 Workflows</button>
+      <button class="tab-btn" onclick="showTab('workarounds',this)">🛠️ Workarounds</button>
+      <button class="tab-btn" onclick="showTab('checklist',this)">✅ Checklist</button>
+    </div>
+
+    <!-- Overview Tab -->
+    <div class="tab-panel active" id="tab-overview">
+      <div id="overviewContent"></div>
+    </div>
+
+    <!-- Config Tab -->
+    <div class="tab-panel" id="tab-config">
+      <div id="configContent"></div>
+    </div>
+
+    <!-- Workflows Tab -->
+    <div class="tab-panel" id="tab-workflows">
+      <div id="workflowContent"></div>
+    </div>
+
+    <!-- Workarounds Tab -->
+    <div class="tab-panel" id="tab-workarounds">
+      <div id="workaroundContent"></div>
+    </div>
+
+    <!-- Checklist Tab -->
+    <div class="tab-panel" id="tab-checklist">
+      <div id="checklistContent"></div>
+    </div>
+
+  </div><!-- /results -->
+
+</div><!-- /main -->
+
+<script>
+// ─────────────────────────────────────────────
+//  File handling
+// ─────────────────────────────────────────────
+let uploadedFileData = null;
+let uploadedFileType = null;
+
+const uploadCard = document.getElementById('uploadCard');
+uploadCard.addEventListener('dragover', e => { e.preventDefault(); uploadCard.classList.add('drag'); });
+uploadCard.addEventListener('dragleave', () => uploadCard.classList.remove('drag'));
+uploadCard.addEventListener('drop', e => {
+  e.preventDefault(); uploadCard.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+document.getElementById('fileInput').addEventListener('change', e => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+function handleFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  const icons = { docx:'📝', pdf:'📕', txt:'📃', doc:'📝' };
+  document.getElementById('fileEmoji').textContent = icons[ext] || '📄';
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileSize').textContent = (file.size/1024).toFixed(1) + ' KB · ' + ext.toUpperCase();
+  document.getElementById('filePreview').classList.add('show');
+  uploadedFileType = ext;
+
+  const reader = new FileReader();
+  reader.onload = ev => { uploadedFileData = ev.target.result.split(',')[1]; };
+  reader.readAsDataURL(file);
+}
+
+function removeFile() {
+  uploadedFileData = null; uploadedFileType = null;
+  document.getElementById('filePreview').classList.remove('show');
+  document.getElementById('fileInput').value = '';
+}
+
+function toggleChip(el) { el.closest('.module-chip').classList.toggle('active', el.checked); }
+
+// ─────────────────────────────────────────────
+//  Main analysis
+// ─────────────────────────────────────────────
+async function analysePolicy() {
+  const policyText = document.getElementById('policyText').value.trim();
+  const errorBox = document.getElementById('errorBox');
+  errorBox.style.display = 'none';
+
+  if (!policyText && !uploadedFileData) {
+    errorBox.textContent = '⚠️ Please upload a policy document or paste the policy text to continue.';
+    errorBox.style.display = 'block'; return;
+  }
+
+  const selectedModules = [...document.querySelectorAll('#modulesGrid input:checked')].map(i=>i.value);
+  if (!selectedModules.length) {
+    errorBox.textContent = '⚠️ Please select at least one Zoho People module.';
+    errorBox.style.display = 'block'; return;
+  }
+
+  const btn = document.getElementById('analyseBtn');
+  btn.disabled = true;
+  btn.querySelector('.btn-inner').innerHTML = '<div class="spinner"></div><span>Analysing policy with AI...</span>';
+
+  const systemPrompt = `You are a certified Zoho People HRMS expert with 10+ years of implementation experience across all modules: Leave, Attendance, Payroll, Performance, Onboarding, Separation, Travel & Expense, and Custom Forms.
+
+Your job is to read a client's HR policy document and generate a comprehensive, implementation-ready Zoho People configuration guide.
+
+You must respond ONLY with valid JSON in the exact schema below — no markdown, no preamble, no explanation outside the JSON.
+
+SCHEMA:
+{
+  "client_name": "string (infer from document or use 'Client')",
+  "policy_title": "string",
+  "modules_detected": ["array of module names"],
+  "summary": {
+    "total_points": number,
+    "direct_config": number,
+    "needs_workflow": number,
+    "needs_workaround": number,
+    "not_possible": number
+  },
+  "sections": [
+    {
+      "id": "unique_id",
+      "title": "Section title e.g. Casual Leave Configuration",
+      "module": "leave|attendance|payroll|performance|onboarding|separation|travel|custom",
+      "icon": "single emoji",
+      "subtitle": "brief one-line description",
+      "status": "direct|workflow|workaround|manual|na",
+      "nav_path": ["Zoho People", "Module", "Sub-menu", "Setting"],
+      "steps": [
+        { "text": "Detailed step with exact field names, values and options to select in Zoho People" }
+      ],
+      "image_guide": {
+        "screen_name": "Exact screen name in Zoho People",
+        "description": "What the user should see and do on this screen. Describe the UI elements, fields, and where to click."
+      },
+      "tips": ["Helpful tip or best practice"],
+      "warnings": ["Important warning or common mistake to avoid"]
+    }
+  ],
+  "workflows": [
+    {
+      "id": "wf_id",
+      "title": "Workflow name",
+      "trigger": "What triggers this workflow (e.g. Leave Application Submitted)",
+      "trigger_module": "module name",
+      "condition": "The condition logic (e.g. Leave Type = Maternity AND Duration > 26 weeks)",
+      "action": "What the workflow does (e.g. Send email notification to HR Manager)",
+      "notification_template": "Brief email/notification template text",
+      "zoho_path": ["Zoho People", "Settings", "Automation", "Workflows"],
+      "steps": ["Step 1: ...", "Step 2: ..."]
+    }
+  ],
+  "workarounds": [
+    {
+      "id": "wa_id",
+      "policy_point": "The policy point that cannot be directly configured",
+      "limitation": "Why Zoho People cannot directly handle this",
+      "workaround": "The recommended workaround",
+      "steps": ["Detailed step 1", "Step 2"],
+      "alternative": "Alternative approach if the workaround is complex"
+    }
+  ],
+  "checklist": [
+    { "id": "c1", "text": "Checklist item", "module": "leave", "priority": "high|medium|low" }
+  ]
+}
+
+Be thorough. For every policy point:
+- If it can be configured directly in Zoho People: provide exact navigation path, field names, and values
+- If it needs a workflow: design the complete workflow with trigger, conditions, and actions
+- If Zoho People cannot handle it natively: provide a practical workaround
+- Always include the exact Zoho People navigation path
+- Include image guide descriptions that tell the user exactly what to look for on each screen
+- Minimum 3 tips and 2 warnings per section
+- Workflows should be practical and implementable
+- Workarounds should be creative but realistic`;
+
+  let userContent = [];
+
+  if (uploadedFileData && uploadedFileType) {
+    const mediaMap = { docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document', pdf:'application/pdf', txt:'text/plain', doc:'application/msword' };
+    const mediaType = mediaMap[uploadedFileType] || 'application/octet-stream';
+    if (uploadedFileType === 'pdf') {
+      userContent.push({ type:'document', source:{ type:'base64', media_type:'application/pdf', data:uploadedFileData } });
+    }
+  }
+
+  const textContent = policyText
+    ? `HR Policy Document Content:\n\n${policyText}\n\nModules to configure: ${selectedModules.join(', ')}`
+    : `Modules to configure: ${selectedModules.join(', ')}\n\nPlease analyse the uploaded document and generate the full configuration guide.`;
+
+  userContent.push({ type:'text', text: textContent });
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'x-api-key':'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', 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:8000,
+        system: systemPrompt,
+        messages:[{ role:'user', content: userContent }]
+      })
+    });
+
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message);
+
+    const rawText = data.content.map(b => b.text||'').join('');
+    const clean = rawText.replace(/```json|```/g,'').trim();
+    const result = JSON.parse(clean);
+
+    renderResults(result);
+
+  } catch(err) {
+    errorBox.textContent = '❌ Error: ' + err.message + '. Please try again.';
+    errorBox.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.querySelector('.btn-inner').innerHTML = '<span>🔍</span><span>Analyse Policy & Generate Configuration Guide</span>';
+  }
+}
+
+// ─────────────────────────────────────────────
+//  Render results
+// ─────────────────────────────────────────────
+function renderResults(r) {
+  document.getElementById('clientLabel').textContent = r.policy_title || r.client_name || 'Client';
+  document.getElementById('resultsMeta').textContent =
+    `${r.sections?.length||0} sections · ${r.workflows?.length||0} workflows · ${r.workarounds?.length||0} workarounds · Modules: ${(r.modules_detected||[]).join(', ')}`;
+
+  // Pills
+  const s = r.summary || {};
+  const pillData = [
+    { label:`${s.direct_config||0} Direct Config`, cls:'green', icon:'✅' },
+    { label:`${s.needs_workflow||0} Needs Workflow`, cls:'yellow', icon:'🔄' },
+    { label:`${s.needs_workaround||0} Workarounds`, cls:'purple', icon:'🛠️' },
+    { label:`${s.not_possible||0} Manual/NA`, cls:'blue', icon:'📌' },
+  ];
+  document.getElementById('summaryPills').innerHTML =
+    pillData.map(p=>`<div class="pill ${p.cls}">${p.icon} ${p.label}</div>`).join('');
+
+  // Overview
+  renderOverview(r);
+  // Config
+  renderConfig(r.sections||[]);
+  // Workflows
+  renderWorkflows(r.workflows||[]);
+  // Workarounds
+  renderWorkarounds(r.workarounds||[]);
+  // Checklist
+  renderChecklist(r.checklist||[], r.sections||[]);
+
+  document.getElementById('results').classList.add('show');
+  document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function statusBadge(status) {
+  const map = {
+    direct:    ['badge-direct',     'Direct Config'],
+    workflow:  ['badge-workflow',   'Needs Workflow'],
+    workaround:['badge-workaround', 'Workaround'],
+    manual:    ['badge-manual',     'Manual'],
+    na:        ['badge-na',         'Not Applicable'],
+  };
+  const [cls, label] = map[status] || ['badge-na', status];
+  return `<span class="status-badge ${cls}">${label}</span>`;
+}
+
+function navPathHtml(path) {
+  if (!path||!path.length) return '';
+  return `<div class="nav-path">${path.map((p,i)=>
+    `<span class="nav-step">${p}</span>${i<path.length-1?'<span class="nav-arrow">›</span>':''}`
+  ).join('')}</div>`;
+}
+
+function renderOverview(r) {
+  const sections = r.sections || [];
+  const rows = sections.map(s=>`
+    <tr>
+      <td>${s.icon||'⚙️'} ${s.title}</td>
+      <td><code style="font-size:11px;color:var(--text2)">${s.module||''}</code></td>
+      <td>${statusBadge(s.status)}</td>
+      <td style="color:var(--text2);font-size:12px">${(s.nav_path||[]).slice(0,3).join(' › ')}</td>
+    </tr>`).join('');
+
+  document.getElementById('overviewContent').innerHTML = `
+    <div class="section-card open">
+      <div class="section-header" onclick="toggleSection(this.parentElement)">
+        <div class="section-icon">📋</div>
+        <div class="section-title"><h3>Policy Analysis Summary</h3><p>All detected policy points and their configuration approach</p></div>
+        <div class="section-chevron">⌄</div>
+      </div>
+      <div class="section-body">
+        <table class="summary-table">
+          <thead><tr><th>Policy Section</th><th>Module</th><th>Approach</th><th>Navigation</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function renderConfig(sections) {
+  if (!sections.length) { document.getElementById('configContent').innerHTML='<p style="color:var(--text2);text-align:center;padding:40px">No configuration sections found.</p>'; return; }
+
+  document.getElementById('configContent').innerHTML = sections.map(s => `
+    <div class="section-card" id="sec-${s.id}">
+      <div class="section-header" onclick="toggleSection(this.parentElement)">
+        <div class="section-icon">${s.icon||'⚙️'}</div>
+        <div class="section-title">
+          <h3>${s.title} &nbsp;${statusBadge(s.status)}</h3>
+          <p>${s.subtitle||''}</p>
+        </div>
+        <div class="section-chevron">⌄</div>
+      </div>
+      <div class="section-body">
+        ${s.nav_path?.length ? `<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">📍 Navigation Path</div>${navPathHtml(s.nav_path)}</div>` : ''}
+
+        ${s.image_guide ? `
+        <div class="img-placeholder">
+          <div class="img-icon">🖥️</div>
+          <div class="img-label">Screen: ${s.image_guide.screen_name||'Zoho People'}</div>
+          <div class="img-nav">${(s.nav_path||[]).join(' › ')}</div>
+          <div class="img-desc">${s.image_guide.description||''}</div>
+        </div>` : ''}
+
+        ${s.steps?.length ? `
+        <div style="margin:14px 0 6px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">⚙️ Configuration Steps</div>
+        <ul class="steps-list">${s.steps.map((st,i)=>`<li><div class="step-num">${i+1}</div><div>${st.text||st}</div></li>`).join('')}</ul>` : ''}
+
+        ${s.tips?.length ? s.tips.map(t=>`<div class="info-block tip"><div class="info-block-icon">💡</div><div>${t}</div></div>`).join('') : ''}
+        ${s.warnings?.length ? s.warnings.map(w=>`<div class="info-block warn"><div class="info-block-icon">⚠️</div><div>${w}</div></div>`).join('') : ''}
+      </div>
+    </div>`).join('');
+}
+
+function renderWorkflows(workflows) {
+  if (!workflows.length) {
+    document.getElementById('workflowContent').innerHTML=`
+      <div class="info-block info"><div class="info-block-icon">ℹ️</div><div>No workflows are required for this policy. All points can be configured directly in Zoho People.</div></div>`;
+    return;
+  }
+
+  document.getElementById('workflowContent').innerHTML = workflows.map(wf=>`
+    <div class="section-card" id="wf-${wf.id}">
+      <div class="section-header" onclick="toggleSection(this.parentElement)">
+        <div class="section-icon">🔄</div>
+        <div class="section-title"><h3>${wf.title}</h3><p>Trigger: ${wf.trigger}</p></div>
+        <div class="section-chevron">⌄</div>
+      </div>
+      <div class="section-body">
+        ${navPathHtml(wf.zoho_path)}
+        <div class="workflow-diagram">
+          <div class="wf-title">Workflow Design</div>
+          <div class="wf-flow">
+            <div class="wf-node trigger">
+              <div class="wf-node-icon">⚡</div>
+              <div class="wf-node-content">
+                <div class="wf-node-label">TRIGGER</div>
+                <div class="wf-node-text">${wf.trigger}</div>
+                <div class="wf-node-sub">Module: ${wf.trigger_module||''}</div>
+              </div>
+              <span class="wf-tag t">T</span>
+            </div>
+            <div class="wf-connector"></div>
+            <div class="wf-node condition">
+              <div class="wf-node-icon">🔀</div>
+              <div class="wf-node-content">
+                <div class="wf-node-label">CONDITION</div>
+                <div class="wf-node-text">${wf.condition||'Always execute'}</div>
+              </div>
+              <span class="wf-tag c">C</span>
+            </div>
+            <div class="wf-connector"></div>
+            <div class="wf-node action">
+              <div class="wf-node-icon">✅</div>
+              <div class="wf-node-content">
+                <div class="wf-node-label">ACTION</div>
+                <div class="wf-node-text">${wf.action}</div>
+              </div>
+              <span class="wf-tag a">A</span>
+            </div>
+            ${wf.notification_template ? `
+            <div class="wf-connector"></div>
+            <div class="wf-node notify">
+              <div class="wf-node-icon">📧</div>
+              <div class="wf-node-content">
+                <div class="wf-node-label">NOTIFICATION</div>
+                <div class="wf-node-text" style="font-size:12px;color:var(--text2)">${wf.notification_template}</div>
+              </div>
+              <span class="wf-tag n">N</span>
+            </div>` : ''}
+          </div>
+        </div>
+        ${wf.steps?.length ? `
+        <div style="margin:14px 0 6px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">🛤️ Setup Steps in Zoho People</div>
+        <ul class="steps-list">${wf.steps.map((st,i)=>`<li><div class="step-num">${i+1}</div><div>${st}</div></li>`).join('')}</ul>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function renderWorkarounds(workarounds) {
+  if (!workarounds.length) {
+    document.getElementById('workaroundContent').innerHTML=`
+      <div class="info-block tip"><div class="info-block-icon">🎉</div><div>Great news! All policy points can be handled natively in Zoho People — no workarounds needed.</div></div>`;
+    return;
+  }
+
+  document.getElementById('workaroundContent').innerHTML = workarounds.map(wa=>`
+    <div class="section-card" id="wa-${wa.id}">
+      <div class="section-header" onclick="toggleSection(this.parentElement)">
+        <div class="section-icon">🛠️</div>
+        <div class="section-title"><h3>${wa.policy_point}</h3><p>Workaround required</p></div>
+        <div class="section-chevron">⌄</div>
+      </div>
+      <div class="section-body">
+        <div class="info-block danger"><div class="info-block-icon">🚫</div><div><strong>Limitation:</strong> ${wa.limitation}</div></div>
+        <div class="info-block info"><div class="info-block-icon">💡</div><div><strong>Recommended Workaround:</strong> ${wa.workaround}</div></div>
+        ${wa.steps?.length ? `
+        <div style="margin:14px 0 6px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">📋 Implementation Steps</div>
+        <ul class="steps-list">${wa.steps.map((st,i)=>`<li><div class="step-num">${i+1}</div><div>${st}</div></li>`).join('')}</ul>` : ''}
+        ${wa.alternative ? `<div class="info-block tip"><div class="info-block-icon">🔄</div><div><strong>Alternative:</strong> ${wa.alternative}</div></div>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function renderChecklist(checklist, sections) {
+  // Auto-generate from sections if checklist is empty
+  if (!checklist.length) {
+    checklist = sections.map((s,i) => ({
+      id:'c'+i, text:`Configure: ${s.title}`, module:s.module,
+      priority: s.status==='direct' ? 'high' : s.status==='workflow' ? 'medium' : 'low'
+    }));
+  }
+
+  const priorityOrder = { high:0, medium:1, low:2 };
+  const sorted = [...checklist].sort((a,b)=>(priorityOrder[a.priority]||1)-(priorityOrder[b.priority]||1));
+
+  const priorityBadge = p => {
+    const map = { high:'🔴 High', medium:'🟡 Medium', low:'🟢 Low' };
+    return `<span style="font-size:11px;color:var(--text3);margin-left:8px">${map[p]||p}</span>`;
+  };
+
+  document.getElementById('checklistContent').innerHTML = `
+    <div class="section-card open">
+      <div class="section-header" onclick="toggleSection(this.parentElement)">
+        <div class="section-icon">✅</div>
+        <div class="section-title"><h3>Implementation Checklist</h3><p>Track your configuration progress</p></div>
+        <div class="section-chevron">⌄</div>
+      </div>
+      <div class="section-body">
+        <ul class="checklist" id="checklistItems">
+          ${sorted.map(item=>`
+          <li id="li-${item.id}">
+            <div class="check-box" onclick="toggleCheck('${item.id}')"></div>
+            <div class="check-text">${item.text}${priorityBadge(item.priority)}</div>
+          </li>`).join('')}
+        </ul>
+        <div style="margin-top:16px;font-size:12px;color:var(--text3);text-align:right" id="checkProgress">0 / ${sorted.length} completed</div>
+      </div>
+    </div>`;
+}
+
+let checkedItems = new Set();
+function toggleCheck(id) {
+  const li = document.getElementById('li-'+id);
+  const box = li.querySelector('.check-box');
+  if (checkedItems.has(id)) {
+    checkedItems.delete(id);
+    box.classList.remove('checked');
+    box.textContent = '';
+    li.classList.remove('done');
+  } else {
+    checkedItems.add(id);
+    box.classList.add('checked');
+    box.textContent = '✓';
+    li.classList.add('done');
+  }
+  const total = document.querySelectorAll('#checklistItems li').length;
+  document.getElementById('checkProgress').textContent = `${checkedItems.size} / ${total} completed`;
+}
+
+// ─────────────────────────────────────────────
+//  UI helpers
+// ─────────────────────────────────────────────
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function toggleSection(card) {
+  card.classList.toggle('open');
+}
+
+function resetTool() {
+  removeFile();
+  document.getElementById('policyText').value = '';
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('errorBox').style.display = 'none';
+  checkedItems.clear();
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+</script>
+</body>
+</html>
